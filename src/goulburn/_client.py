@@ -35,7 +35,7 @@ from goulburn._errors import (
     NotFoundError,
     RateLimitError,
 )
-from goulburn._models import Owner
+from goulburn._models import Agent, AgentList, Owner, ProbeRunResult, TrustProfile
 
 # ── Defaults ────────────────────────────────────────────────────────
 _DEFAULT_BASE_URL = "https://api.goulburn.ai"
@@ -130,6 +130,75 @@ class _AuthNamespace:
         return Owner.model_validate(data)
 
 
+
+
+class _AgentsNamespace:
+    """Async methods under client.agents."""
+
+    def __init__(self, client: Client) -> None:
+        self._c = client
+
+    async def list(self) -> AgentList:
+        """List agents owned by the authenticated owner.
+
+        GET /api/v1/agents/mine — requires a valid Owner API key.
+        """
+        data = await self._c._request("GET", "/api/v1/agents/mine")
+        return AgentList.model_validate(data)
+
+    async def get(self, name: str) -> Agent:
+        """Fetch a single agent by name (case-sensitive).
+
+        GET /api/v1/agents/{name}. Public endpoint; if called with an
+        Owner API key that matches the agent's owner, the response is
+        augmented with is_owner=True.
+        """
+        data = await self._c._request("GET", f"/api/v1/agents/{name}")
+        return Agent.model_validate(data)
+
+
+class _ProbesNamespace:
+    """Async methods under client.probes."""
+
+    def __init__(self, client: Client) -> None:
+        self._c = client
+
+    async def run(self, agent_name: str, *, kind: str) -> ProbeRunResult:
+        """Trigger an on-demand probe.
+
+        POST /api/v1/agents/{name}/probe/run?kind=<kind>
+        kind must be 'compliance' or 'capability'. Owner API key
+        scope: the caller must own the agent.
+
+        Rate-limited server-side to one probe per kind per agent per hour.
+        Returns RateLimitError if the cooldown is still active.
+        """
+        if kind not in ("compliance", "capability"):
+            raise ValueError(f"kind must be 'compliance' or 'capability', got {kind!r}")
+        data = await self._c._request(
+            "POST",
+            f"/api/v1/agents/{agent_name}/probe/run",
+            params={"kind": kind},
+        )
+        return ProbeRunResult.model_validate(data or {})
+
+
+class _TrustNamespace:
+    """Async methods under client.trust."""
+
+    def __init__(self, client: Client) -> None:
+        self._c = client
+
+    async def profile(self, agent_name: str) -> TrustProfile:
+        """Fetch the full trust profile (5-layer breakdown).
+
+        GET /api/v1/trust/profile/{agent_name} — public endpoint; works
+        with or without auth. Returned even for agents the caller doesn't own.
+        """
+        data = await self._c._request("GET", f"/api/v1/trust/profile/{agent_name}")
+        return TrustProfile.model_validate(data)
+
+
 class Client:
     """Async client for the goulburn.ai Trust API.
 
@@ -170,6 +239,9 @@ class Client:
             transport=transport,
         )
         self.auth = _AuthNamespace(self)
+        self.agents = _AgentsNamespace(self)
+        self.probes = _ProbesNamespace(self)
+        self.trust = _TrustNamespace(self)
 
     async def aclose(self) -> None:
         await self._http.aclose()
@@ -235,6 +307,44 @@ class _SyncAuthNamespace:
         return Owner.model_validate(data)
 
 
+
+
+class _SyncAgentsNamespace:
+    def __init__(self, client: SyncClient) -> None:
+        self._c = client
+
+    def list(self) -> AgentList:
+        return AgentList.model_validate(self._c._request("GET", "/api/v1/agents/mine"))
+
+    def get(self, name: str) -> Agent:
+        return Agent.model_validate(self._c._request("GET", f"/api/v1/agents/{name}"))
+
+
+class _SyncProbesNamespace:
+    def __init__(self, client: SyncClient) -> None:
+        self._c = client
+
+    def run(self, agent_name: str, *, kind: str) -> ProbeRunResult:
+        if kind not in ("compliance", "capability"):
+            raise ValueError(f"kind must be 'compliance' or 'capability', got {kind!r}")
+        data = self._c._request(
+            "POST",
+            f"/api/v1/agents/{agent_name}/probe/run",
+            params={"kind": kind},
+        )
+        return ProbeRunResult.model_validate(data or {})
+
+
+class _SyncTrustNamespace:
+    def __init__(self, client: SyncClient) -> None:
+        self._c = client
+
+    def profile(self, agent_name: str) -> TrustProfile:
+        return TrustProfile.model_validate(
+            self._c._request("GET", f"/api/v1/trust/profile/{agent_name}")
+        )
+
+
 class SyncClient:
     """Synchronous client. Same surface as Client, blocking-style.
 
@@ -266,6 +376,9 @@ class SyncClient:
             transport=transport,
         )
         self.auth = _SyncAuthNamespace(self)
+        self.agents = _SyncAgentsNamespace(self)
+        self.probes = _SyncProbesNamespace(self)
+        self.trust = _SyncTrustNamespace(self)
 
     def close(self) -> None:
         self._http.close()

@@ -62,13 +62,29 @@ Or pass them explicitly:
 Client(api_key="gbok_...", base_url="https://api.goulburn.ai")
 ```
 
-## What's in v0.1
+## What's in v0.2
 
-This is the alpha release. The supported surface is intentionally small:
+The supported surface — all available in both async (`Client`) and sync (`SyncClient`) flavours:
 
-- `goulburn auth verify` / `client.auth.verify()` — confirm the API key is valid and surface the owner identity.
+| CLI | Python | Endpoint |
+|---|---|---|
+| `goulburn auth verify` | `client.auth.verify()` | `GET /api/v1/owner/me` |
+| `goulburn agents list` | `client.agents.list()` | `GET /api/v1/agents/mine` |
+| `goulburn agents get <name>` | `client.agents.get(name)` | `GET /api/v1/agents/{name}` |
+| `goulburn probe run <name> --kind <k>` | `client.probes.run(name, kind=...)` | `POST /api/v1/agents/{name}/probe/run` |
+| `goulburn trust query <name>` | `client.trust.profile(name)` | `GET /api/v1/trust/profile/{name}` |
 
-The next release expands to agent management, probe execution, trust score queries, and CI gate integration. See the [roadmap](https://github.com/Goulburn-ai/goulburn-sdk-python/issues) for what's coming.
+Future releases add the CI Gate GitHub Action, webhook signing, Terraform provider, and self-hosted probe runner integration. See the [roadmap](https://github.com/Goulburn-ai/goulburn-sdk-python/issues) for what's coming.
+
+## Example: a CI-style smoke check
+
+```bash
+# In your CI pipeline, after a deploy:
+goulburn probe run my_agent --kind compliance
+goulburn trust query my_agent
+# Pipe to `jq` if you want to fail the build on a tier drop.
+goulburn trust query my_agent --json | jq -e '.overall_score >= 60'
+```
 
 ## License
 
