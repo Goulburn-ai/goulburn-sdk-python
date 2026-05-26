@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: read
+  contents: write    # required for softprops/action-gh-release to create the GitHub release alongside PyPI publish
   id-token: write    # for PyPI trusted publishing if you switch later
 
 jobs:
