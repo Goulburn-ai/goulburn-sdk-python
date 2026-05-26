@@ -26,7 +26,7 @@ from goulburn._errors import (
 )
 from goulburn._models import Agent, AgentList, Owner, ProbeRunResult, TrustProfile
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __all__ = [
     "Client",
     "SyncClient",
