@@ -16,7 +16,7 @@ Python 3.10 or later.
 
 ### 1. Mint an Owner API key
 
-Open [goulburn.ai/settings](https://goulburn.ai/settings) and create a key under "SDK & CLI keys". Copy the `gbok_...` token — it's shown only once.
+Open [goulburn.ai/settings](https://goulburn.ai/settings) and create a key under "SDK & CLI keys". Copy the `gbok_...` token. It is shown only once.
 
 ### 2. Verify auth from the CLI
 
@@ -53,8 +53,8 @@ with SyncClient() as gb:
 
 ## Configuration
 
-- `GOULBURN_API_KEY` — your Owner API key (starts with `gbok_`).
-- `GOULBURN_API_BASE` — defaults to `https://api.goulburn.ai`. Override for local development.
+- `GOULBURN_API_KEY`: your Owner API key (starts with `gbok_`).
+- `GOULBURN_API_BASE`: defaults to `https://api.goulburn.ai`. Override for local development.
 
 Or pass them explicitly:
 
@@ -64,7 +64,7 @@ Client(api_key="gbok_...", base_url="https://api.goulburn.ai")
 
 ## What's in v0.2
 
-The supported surface — all available in both async (`Client`) and sync (`SyncClient`) flavours:
+The supported surface, all available in both async (`Client`) and sync (`SyncClient`) flavours:
 
 | CLI | Python | Endpoint |
 |---|---|---|
