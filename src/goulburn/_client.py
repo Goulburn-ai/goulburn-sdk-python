@@ -26,6 +26,7 @@ import os
 import random
 from types import TracebackType
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -36,6 +37,21 @@ from goulburn._errors import (
     RateLimitError,
 )
 from goulburn._models import Agent, AgentList, Owner, ProbeRunResult, TrustProfile
+
+
+def _path_segment(value: str) -> str:
+    """Percent-encode one caller-supplied URL path segment (an agent name).
+
+    Without this, httpx resolves a name like ``../owner/me`` to
+    ``/api/v1/owner/me``, and ``a?x=1`` injects a query string. Mirrors
+    encodeURIComponent in the TypeScript SDK.
+    """
+    if not isinstance(value, str) or value in ("", ".", ".."):
+        raise ValueError(f"invalid agent name: {value!r}")
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value):
+        raise ValueError(f"invalid agent name (control character): {value!r}")
+    return quote(value, safe="")
+
 
 # ── Defaults ────────────────────────────────────────────────────────
 _DEFAULT_BASE_URL = "https://api.goulburn.ai"
@@ -153,7 +169,7 @@ class _AgentsNamespace:
         Owner API key that matches the agent's owner, the response is
         augmented with is_owner=True.
         """
-        data = await self._c._request("GET", f"/api/v1/agents/{name}")
+        data = await self._c._request("GET", f"/api/v1/agents/{_path_segment(name)}")
         return Agent.model_validate(data)
 
 
@@ -177,7 +193,7 @@ class _ProbesNamespace:
             raise ValueError(f"kind must be 'compliance' or 'capability', got {kind!r}")
         data = await self._c._request(
             "POST",
-            f"/api/v1/agents/{agent_name}/probe/run",
+            f"/api/v1/agents/{_path_segment(agent_name)}/probe/run",
             params={"kind": kind},
         )
         return ProbeRunResult.model_validate(data or {})
@@ -195,7 +211,7 @@ class _TrustNamespace:
         GET /api/v1/trust/profile/{agent_name} — public endpoint; works
         with or without auth. Returned even for agents the caller doesn't own.
         """
-        data = await self._c._request("GET", f"/api/v1/trust/profile/{agent_name}")
+        data = await self._c._request("GET", f"/api/v1/trust/profile/{_path_segment(agent_name)}")
         return TrustProfile.model_validate(data)
 
 
@@ -317,7 +333,8 @@ class _SyncAgentsNamespace:
         return AgentList.model_validate(self._c._request("GET", "/api/v1/agents/mine"))
 
     def get(self, name: str) -> Agent:
-        return Agent.model_validate(self._c._request("GET", f"/api/v1/agents/{name}"))
+        data = self._c._request("GET", f"/api/v1/agents/{_path_segment(name)}")
+        return Agent.model_validate(data)
 
 
 class _SyncProbesNamespace:
@@ -329,7 +346,7 @@ class _SyncProbesNamespace:
             raise ValueError(f"kind must be 'compliance' or 'capability', got {kind!r}")
         data = self._c._request(
             "POST",
-            f"/api/v1/agents/{agent_name}/probe/run",
+            f"/api/v1/agents/{_path_segment(agent_name)}/probe/run",
             params={"kind": kind},
         )
         return ProbeRunResult.model_validate(data or {})
@@ -341,7 +358,7 @@ class _SyncTrustNamespace:
 
     def profile(self, agent_name: str) -> TrustProfile:
         return TrustProfile.model_validate(
-            self._c._request("GET", f"/api/v1/trust/profile/{agent_name}")
+            self._c._request("GET", f"/api/v1/trust/profile/{_path_segment(agent_name)}")
         )
 
 
