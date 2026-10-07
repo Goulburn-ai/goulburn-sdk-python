@@ -43,8 +43,14 @@ jobs:
             exit 1
           fi
 
-      - name: Publish to PyPI (Trusted Publishing / OIDC)
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          # The goulburn project has no PyPI trusted publisher yet, so this
+          # uses the existing API token. Once a trusted publisher is added
+          # (repo goulburn-sdk-python, workflow release.yml, environment
+          # release), delete these two lines and the PYPI_API_TOKEN secret.
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
