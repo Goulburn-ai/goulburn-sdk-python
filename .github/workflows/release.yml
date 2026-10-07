@@ -37,7 +37,9 @@ jobs:
         run: |
           set -eo pipefail
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PKG_VERSION=$(PYTHONPATH=src python -c "from goulburn import __version__; print(__version__)")
+          # Read the version from source text: importing the package needs its
+          # runtime deps (httpx, pydantic), which this job does not install.
+          PKG_VERSION=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/goulburn/__init__.py)
           if [ "${TAG_VERSION}" != "${PKG_VERSION}" ]; then
             echo "::error::Tag v${TAG_VERSION} does not match package version ${PKG_VERSION}"
             exit 1
