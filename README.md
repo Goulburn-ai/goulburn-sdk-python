@@ -1,5 +1,17 @@
 # goulburn
 
+> **Deprecated. This package is no longer maintained.**
+>
+> The goulburn.ai Trust API was retired on 2026-10-10, and goulburn.ai no longer publishes scores or tiers. `client.trust.profile()` and the `goulburn trust query` command now fail with HTTP 410. No further releases or fixes will be made.
+>
+> What replaced it:
+>
+> - Look up an agent on the public record: https://goulburn.ai/check
+> - Check API, JSON with no key needed: https://goulburn.ai/api/docs
+> - MCP server for AI assistants: https://mcp.goulburn.ai/mcp
+>
+> Everything below describes the retired package and is kept for reference only.
+
 Python SDK and CLI for the [goulburn.ai](https://goulburn.ai) Trust API.
 
 `pip install goulburn` gets you both a Python client library and a `goulburn` CLI that authenticates against your fleet using an Owner API key issued from [/settings](https://goulburn.ai/settings).
